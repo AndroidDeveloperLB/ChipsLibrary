@@ -1,17 +1,9 @@
 ChipsLibrary
 =================
 
-This is a fork of Google's chips library shown here:
+This is a fork of Google's chips library shown [**here**][1], and can be downloaded from [**here**][3]
 
-https://plus.google.com/+RichHyndman/posts/TSxaARVsRjF
-
-Screenshot:
-
-https://lh3.googleusercontent.com/-0tiDXRdjE9w/UEKSRdUaS6I/AAAAAAAAoqw/thtcKMWSWKs/w393-h683-no/png.png
-
-and available here:
-
-https://android.googlesource.com/platform/frameworks/ex/+/android-sdk-support_r11/chips/
+![screenshot][3]
 
 What's different from the original library :
 
@@ -30,10 +22,10 @@ Of course, you can always revert back to what Google has done, if you wish.
  3. removeRecipient - removes a recipient
  4. setChipListener - sets a listener that'll notify you when the number of chips has changed.
 
-IMPORTANT: you can only safely call the recipients' operations after the view got its size feagured out. 
+ IMPORTANT: you can only safely call the recipients' operations after the view got its size feagured out. 
 You can use the sample's code for this, using the function "runJustBeforeBeingDrawn", in case you need to use those operations as soon as possible.  
 
-In order to make it easy for you to find the code for those added features, I've put them all at the end of "RecipientEditTextView.java" file.
+ In order to make it easy for you to find the code for those added features, I've put them all at the end of "RecipientEditTextView.java" file.
 
 6. Made the code a bit more readable. Not enough, but still... :)
  
@@ -50,3 +42,8 @@ If you've noticed a bug, please write about it, especially if you know how to fi
 - Like the original library, this one's minimal API is 11 . 
 
 - Be sure to check the sample. It's a bit messy, but it shows what can be done.  
+
+
+  [1]: https://plus.google.com/+RichHyndman/posts/TSxaARVsRjF
+  [2]: http://https://android.googlesource.com/platform/frameworks/ex/+/android-sdk-support_r11/chips/
+  [3]: https://lh3.googleusercontent.com/-0tiDXRdjE9w/UEKSRdUaS6I/AAAAAAAAoqw/thtcKMWSWKs/w393-h683-no/png.png
