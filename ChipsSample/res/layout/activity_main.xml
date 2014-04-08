@@ -29,10 +29,9 @@
 			android:focusable="false"
 			android:focusableInTouchMode="false"
 			android:gravity="center_vertical"
-			android:text="To"
+			android:text="@string/to"
 			android:textColor="@android:color/darker_gray"
-			android:textSize="16sp"
-			tools:ignore="HardcodedText" />
+			android:textSize="16sp" />
 
 		<com.android.ex.chips.RecipientEditTextView
 			android:id="@+id/phone_retv"
@@ -50,13 +49,13 @@
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
 	    android:layout_gravity="center_horizontal"
-	    android:text="add a random recipient"
-	    tools:ignore="HardcodedText" />
+	    android:text="@string/add_a_random_recipient"
+	/>
 	
 	<Button
 	    android:id="@+id/removeRecipientButton" android:layout_gravity="center_horizontal"
 	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content" tools:ignore="HardcodedText" 
-	    android:text="remove a random recipient" />
+	    android:layout_height="wrap_content" 
+	    android:text="@string/remove_a_random_recipient" />
 
 </LinearLayout>

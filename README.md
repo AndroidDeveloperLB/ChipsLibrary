@@ -31,7 +31,7 @@ You can use the sample's code for this, using the function "runJustBeforeBeingDr
  
 Notes :
 
-- on some devices (like Galaxy S2 and Galaxy S3) , pressing backspace after the chip will sometimes show its number instead of removing it.
+- on some devices (like Galaxy S2 and Galaxy S3) , pressing backspace after the chip will sometimes show its number instead of removing the chip (and its data) completely.
 There might be some other weird behaviors on those devices, which are caused due to changes on the default behavior of MultiAutoCompleteTextView
 
 - It seems the original library has a lot of "TODO"s and even some that say to fix issues. Not sure how important they are though

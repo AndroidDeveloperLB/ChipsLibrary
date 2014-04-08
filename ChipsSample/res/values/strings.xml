@@ -18,5 +18,12 @@
     <string name="app_name" translatable="false">Chips Sample</string>
     <string name="email_addresses">Email Addresses</string>
     <string name="phone_numbers">Phone Numbers</string>
+    <string name="add_a_random_recipient">add a random recipient</string>
+    <string name="remove_a_random_recipient">remove a random recipient</string>
+    <string name="to">To</string>
+    <string name="repository_website">Repository website</string>
+    <string name="all_my_repositories">All my repositories</string>
+    <string name="all_my_apps">All my apps</string>
+    <string name="more_info">More info</string>
 
 </resources>
