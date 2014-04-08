@@ -7,9 +7,9 @@ This is a fork of Google's chips library shown [**here**][1], and can be downloa
 
 What's different from the original library :
 
-1. It's easy to import and build on Eclipse.
+1. It's easy to import and build on Eclipse. :)
 
-2. Removed buggy dragging feature and its 
+2. Removed buggy dragging feature and the classes it uses. 
 
 3. fixed setOnItemClickListener (for clicking on chips) so that it will use both the chips library's logic AND your code.
 
