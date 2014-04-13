@@ -21,6 +21,9 @@ Of course, you can always revert back to what Google has done, if you wish.
  2. addRecipient - adds a recipient
  3. removeRecipient - removes a recipient
  4. setChipListener - sets a listener that'll notify you when the number of chips has changed.
+ 5. ability to choose what to do when focus removed/received.
+ 6. ability to choose which recipients to use .
+ 7. ability to control if you wish to be notified about chips added/removed when you are the one who triggered it.
 
  IMPORTANT: you can only safely call the recipients' operations after the view got its size feagured out. 
 You can use the sample's code for this, using the function "runJustBeforeBeingDrawn", in case you need to use those operations as soon as possible.  
