@@ -18,10 +18,14 @@ Of course, you can always revert back to what Google has done, if you wish.
 
 5. Added features :
  1. getRecipients - query all recipients (should usually be done on a background thread)
- 2. addRecipient - adds a recipient
- 3. removeRecipient - removes a recipient
+ 2. addRecipient , removeRecipient - adds/removes a recipient. also, ability to control if you wish to be notified about chips added/removed when you are the one who triggered it.
  4. setChipListener - sets a listener that'll notify you when the number of chips has changed.
-
+ 5. setFocusBehavior - ability to choose what to do when focus removed/received.
+ 6. New CTOR for the BaseRecipientAdapter, which allows to choose which recipients to use . Note that this is only for demonstrations
+ 7. setChosenRecipients - ability to set all chosen recipients.
+ 8. removeAllRecipients - removes all of the chosen recipients
+ 9. getChosenRecipients - returns all of the chosen recipients
+ 
  IMPORTANT: you can only safely call the recipients' operations after the view got its size feagured out. 
 You can use the sample's code for this, using the function "runJustBeforeBeingDrawn", in case you need to use those operations as soon as possible.  
 
