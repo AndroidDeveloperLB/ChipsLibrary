@@ -39,9 +39,7 @@ class SingleRecipientArrayAdapter extends ArrayAdapter<RecipientEntry>
   public View getView(int position,View convertView,ViewGroup parent)
     {
     if(convertView==null)
-      {
       convertView=newView();
-      }
     bindView(convertView,getItem(position));
     return convertView;
     }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import android.accounts.Account;
@@ -155,14 +156,14 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
 
     public TemporaryEntry(final Cursor cursor,final boolean isGalContact)
       {
-      this.displayName=cursor.getString(Queries.Query.NAME);
-      this.destination=cursor.getString(Queries.Query.DESTINATION);
-      this.destinationType=cursor.getInt(Queries.Query.DESTINATION_TYPE);
-      this.destinationLabel=cursor.getString(Queries.Query.DESTINATION_LABEL);
-      this.contactId=cursor.getLong(Queries.Query.CONTACT_ID);
-      this.dataId=cursor.getLong(Queries.Query.DATA_ID);
-      this.thumbnailUriString=cursor.getString(Queries.Query.PHOTO_THUMBNAIL_URI);
-      this.displayNameSource=cursor.getInt(Queries.Query.DISPLAY_NAME_SOURCE);
+      displayName=cursor.getString(Queries.Query.NAME);
+      destination=cursor.getString(Queries.Query.DESTINATION);
+      destinationType=cursor.getInt(Queries.Query.DESTINATION_TYPE);
+      destinationLabel=cursor.getString(Queries.Query.DESTINATION_LABEL);
+      contactId=cursor.getLong(Queries.Query.CONTACT_ID);
+      dataId=cursor.getLong(Queries.Query.DATA_ID);
+      thumbnailUriString=cursor.getString(Queries.Query.PHOTO_THUMBNAIL_URI);
+      displayNameSource=cursor.getInt(Queries.Query.DISPLAY_NAME_SOURCE);
       this.isGalContact=isGalContact;
       }
     }
@@ -197,9 +198,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
     protected FilterResults performFiltering(final CharSequence constraint)
       {
       if(DEBUG)
-        {
         Log.d(TAG,"start filtering. constraint: "+constraint+", thread:"+Thread.currentThread());
-        }
       final FilterResults results=new FilterResults();
       Cursor defaultDirectoryCursor=null;
       Cursor directoryCursor=null;
@@ -209,15 +208,26 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
         // Return empty results.
         return results;
         }
+      if(mQuery==null)
+        {
+        final List<RecipientEntry> result=new ArrayList<RecipientEntry>();
+        for(final RecipientEntry recipientEntry : mOriginalEntries)
+          {
+          final String constraintStr=constraint.toString().toLowerCase(Locale.getDefault());
+          if(recipientEntry.getDisplayName().toLowerCase(Locale.getDefault()).contains(constraintStr)||recipientEntry.getDestination().toLowerCase(Locale.getDefault()).contains(constraintStr))
+            result.add(recipientEntry);
+          }
+        results.values=new DefaultFilterResult(result,null,null,null,null);
+        results.count=1;
+        return results;
+        }
       try
         {
         defaultDirectoryCursor=doQuery(constraint,mPreferredMaxResultCount,null);
         if(defaultDirectoryCursor==null)
           {
           if(DEBUG)
-            {
             Log.w(TAG,"null cursor returned for default Email filter query.");
-            }
           }
         else
           {
@@ -228,11 +238,9 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
           final List<RecipientEntry> nonAggregatedEntries=new ArrayList<RecipientEntry>();
           final Set<String> existingDestinations=new HashSet<String>();
           while(defaultDirectoryCursor.moveToNext())
-            {
             // Note: At this point each entry doesn't contain any photo
             // (thus getPhotoBytes() returns null).
             putOneEntry(new TemporaryEntry(defaultDirectoryCursor,false /* isGalContact */),true,entryMap,nonAggregatedEntries,existingDestinations);
-            }
           // We'll copy this result to mEntry in publicResults() (run in the UX thread).
           final List<RecipientEntry> entries=constructEntryList(entryMap,nonAggregatedEntries);
           // After having local results, check the size of results. If the results are
@@ -242,17 +250,12 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
           if(limit>0)
             {
             if(DEBUG)
-              {
               Log.d(TAG,"More entries should be needed (current: "+existingDestinations.size()+", remaining limit: "+limit+") ");
-              }
             directoryCursor=mContentResolver.query(DirectoryListQuery.URI,DirectoryListQuery.PROJECTION,null,null,null);
             paramsList=setupOtherDirectories(mContext,directoryCursor,mAccount);
             }
-          else
-            {
-            // We don't need to search other directories.
-            paramsList=null;
-            }
+          else // We don't need to search other directories.
+          paramsList=null;
           results.values=new DefaultFilterResult(entries,entryMap,nonAggregatedEntries,existingDestinations,paramsList);
           results.count=1;
           }
@@ -264,13 +267,9 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       finally
         {
         if(defaultDirectoryCursor!=null)
-          {
           defaultDirectoryCursor.close();
-          }
         if(directoryCursor!=null)
-          {
           directoryCursor.close();
-          }
         }
       return results;
       }
@@ -292,9 +291,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
         // If there are no local results, in the new result set, cache off what had been
         // shown to the user for use until the first directory result is returned
         if(defaultFilterResult.entries.size()==0&&defaultFilterResult.paramsList!=null)
-          {
           cacheCurrentEntries();
-          }
         updateEntries(defaultFilterResult.entries);
         // We need to search other remote directories, doing other Filter requests.
         if(defaultFilterResult.paramsList!=null)
@@ -312,13 +309,8 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       final String displayName=entry.getDisplayName();
       final String emailAddress=entry.getDestination();
       if(TextUtils.isEmpty(displayName)||TextUtils.equals(displayName,emailAddress))
-        {
         return emailAddress;
-        }
-      else
-        {
-        return new Rfc822Token(displayName,emailAddress,null).toString();
-        }
+      else return new Rfc822Token(displayName,emailAddress,null).toString();
       }
     }
 
@@ -337,21 +329,19 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
 
     public synchronized void setLimit(final int limit)
       {
-      this.mLimit=limit;
+      mLimit=limit;
       }
 
     public synchronized int getLimit()
       {
-      return this.mLimit;
+      return mLimit;
       }
 
     @Override
     protected FilterResults performFiltering(final CharSequence constraint)
       {
       if(DEBUG)
-        {
         Log.d(TAG,"DirectoryFilter#performFiltering. directoryId: "+mParams.directoryId+", constraint: "+constraint+", thread: "+Thread.currentThread());
-        }
       final FilterResults results=new FilterResults();
       results.values=null;
       results.count=0;
@@ -366,19 +356,13 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
           // We just copy everything to local structure.
           cursor=doQuery(constraint,getLimit(),mParams.directoryId);
           if(cursor!=null)
-            {
             while(cursor.moveToNext())
-              {
               tempEntries.add(new TemporaryEntry(cursor,true /* isGalContact */));
-              }
-            }
           }
         finally
           {
           if(cursor!=null)
-            {
             cursor.close();
-            }
           }
         if(!tempEntries.isEmpty())
           {
@@ -387,9 +371,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
           }
         }
       if(DEBUG)
-        {
         Log.v(TAG,"finished loading directory \""+mParams.displayName+"\""+" with query "+constraint);
-        }
       return results;
       }
 
@@ -397,9 +379,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
     protected void publishResults(final CharSequence constraint,final FilterResults results)
       {
       if(DEBUG)
-        {
         Log.d(TAG,"DirectoryFilter#publishResult. constraint: "+constraint+", mCurrentConstraint: "+mCurrentConstraint);
-        }
       mDelayedMessageHandler.removeDelayedLoadMessage();
       // Check if the received result matches the current constraint
       // If not - the user must have continued typing after the request was issued, which
@@ -412,27 +392,21 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
           @SuppressWarnings("unchecked")
           final ArrayList<TemporaryEntry> tempEntries=(ArrayList<TemporaryEntry>)results.values;
           for(final TemporaryEntry tempEntry : tempEntries)
-            {
             putOneEntry(tempEntry,mParams.directoryId==Directory.DEFAULT,mEntryMap,mNonAggregatedEntries,mExistingDestinations);
-            }
           }
         // If there are remaining directories, set up delayed message again.
         mRemainingDirectoryCount--;
         if(mRemainingDirectoryCount>0)
           {
           if(DEBUG)
-            {
             Log.d(TAG,"Resend delayed load message. Current mRemainingDirectoryLoad: "+mRemainingDirectoryCount);
-            }
           mDelayedMessageHandler.sendDelayedLoadMessage();
           }
         // If this directory result has some items, or there are no more directories that
         // we are waiting for, clear the temp results
         if(results.count>0||mRemainingDirectoryCount==0)
-          {
           // Clear the temp entries
           clearTempEntries();
-          }
         }
       // Show the list again without "waiting" message.
       updateEntries(constructEntryList(mEntryMap,mNonAggregatedEntries));
@@ -466,7 +440,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
    * quickly.
    */
   private CharSequence                             mCurrentConstraint;
-  private final LruCache<Uri,byte[]>               mPhotoCacheMap;
+  private final LruCache<Uri,byte[]>               mPhotoCacheMap =new LruCache<Uri,byte[]>(PHOTO_CACHE_SIZE);
 
   /**
    * Handler specific for maintaining "Waiting for more contacts" message, which will be shown when: - there are
@@ -478,9 +452,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
     public void handleMessage(final Message msg)
       {
       if(mRemainingDirectoryCount>0)
-        {
         updateEntries(constructEntryList(mEntryMap,mNonAggregatedEntries));
-        }
       }
 
     public void sendDelayedLoadMessage()
@@ -496,6 +468,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
 
   private final DelayedMessageHandler mDelayedMessageHandler =new DelayedMessageHandler();
   private EntriesUpdatedObserver      mEntriesUpdatedObserver;
+  private List<RecipientEntry>        mOriginalEntries;
 
   /**
    * Constructor for email queries.
@@ -508,6 +481,17 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
   public BaseRecipientAdapter(final Context context,final int preferredMaxResultCount)
     {
     this(context,preferredMaxResultCount,QUERY_TYPE_EMAIL);
+    }
+
+  public BaseRecipientAdapter(final Context context,final int preferredMaxResultCount,final List<RecipientEntry> entries)
+    {
+    mContext=context;
+    mContentResolver=null;
+    mQueryType=-1;
+    mQuery=null;
+    mPreferredMaxResultCount=preferredMaxResultCount;
+    mInflater=LayoutInflater.from(context);
+    mEntries=mOriginalEntries=entries;
     }
 
   public BaseRecipientAdapter(final int queryMode,final Context context)
@@ -526,7 +510,6 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
     mContentResolver=context.getContentResolver();
     mInflater=LayoutInflater.from(context);
     mPreferredMaxResultCount=preferredMaxResultCount;
-    mPhotoCacheMap=new LruCache<Uri,byte[]>(PHOTO_CACHE_SIZE);
     mQueryType=queryMode;
     switch(queryMode)
       {
@@ -571,7 +554,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
   /**
    * An extesion to {@link RecipientAlternatesAdapter#getMatchingRecipients} that allows additional sources of
    * contacts to be considered as matching recipients.
-   * 
+   *
    * @param addresses
    * A set of addresses to be matched
    * @return A list of matches or null if none found
@@ -592,9 +575,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       // Skip the local invisible directory, because the default directory already includes
       // all local results.
       if(id==Directory.LOCAL_INVISIBLE)
-        {
         continue;
-        }
       final DirectorySearchParams params=new DirectorySearchParams();
       final String packageName=directoryCursor.getString(DirectoryListQuery.PACKAGE_NAME);
       final int resourceId=directoryCursor.getInt(DirectoryListQuery.TYPE_RESOURCE_ID);
@@ -603,37 +584,26 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       params.accountName=directoryCursor.getString(DirectoryListQuery.ACCOUNT_NAME);
       params.accountType=directoryCursor.getString(DirectoryListQuery.ACCOUNT_TYPE);
       if(packageName!=null&&resourceId!=0)
-        {
         try
           {
           final Resources resources=packageManager.getResourcesForApplication(packageName);
           params.directoryType=resources.getString(resourceId);
           if(params.directoryType==null)
-            {
             Log.e(TAG,"Cannot resolve directory name: "+resourceId+"@"+packageName);
-            }
           }
         catch(final NameNotFoundException e)
           {
           Log.e(TAG,"Cannot resolve directory name: "+resourceId+"@"+packageName,e);
           }
-        }
       // If an account has been provided and we found a directory that
       // corresponds to that account, place that directory second, directly
       // underneath the local contacts.
       if(account!=null&&account.name.equals(params.accountName)&&account.type.equals(params.accountType))
-        {
         preferredDirectory=params;
-        }
-      else
-        {
-        paramsList.add(params);
-        }
+      else paramsList.add(params);
       }
     if(preferredDirectory!=null)
-      {
       paramsList.add(1,preferredDirectory);
-      }
     return paramsList;
     }
 
@@ -649,9 +619,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       final DirectorySearchParams params=paramsList.get(i);
       params.constraint=constraint;
       if(params.filter==null)
-        {
         params.filter=new DirectoryFilter(params);
-        }
       params.filter.setLimit(limit);
       params.filter.filter(constraint);
       }
@@ -664,14 +632,10 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
   private static void putOneEntry(final TemporaryEntry entry,final boolean isAggregatedEntry,final LinkedHashMap<Long,List<RecipientEntry>> entryMap,final List<RecipientEntry> nonAggregatedEntries,final Set<String> existingDestinations)
     {
     if(existingDestinations.contains(entry.destination))
-      {
       return;
-      }
     existingDestinations.add(entry.destination);
     if(!isAggregatedEntry)
-      {
       nonAggregatedEntries.add(RecipientEntry.constructTopLevelEntry(entry.displayName,entry.displayNameSource,entry.destination,entry.destinationType,entry.destinationLabel,entry.contactId,entry.dataId,entry.thumbnailUriString,true,entry.isGalContact));
-      }
     else if(entryMap.containsKey(entry.contactId))
       {
       // We already have a section for the person.
@@ -706,23 +670,17 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
         validEntryCount++;
         }
       if(validEntryCount>mPreferredMaxResultCount)
-        {
         break;
-        }
       }
     if(validEntryCount<=mPreferredMaxResultCount)
-      {
       for(final RecipientEntry entry : nonAggregatedEntries)
         {
         if(validEntryCount>mPreferredMaxResultCount)
-          {
           break;
-          }
         entries.add(entry);
         tryFetchPhoto(entry);
         validEntryCount++;
         }
-      }
     return entries;
     }
 
@@ -766,16 +724,12 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       {
       final byte[] photoBytes=mPhotoCacheMap.get(photoThumbnailUri);
       if(photoBytes!=null)
-        {
         entry.setPhotoBytes(photoBytes);
-        // notifyDataSetChanged() should be called by a caller.
-        }
+      // notifyDataSetChanged() should be called by a caller.
       else
         {
         if(DEBUG)
-          {
           Log.d(TAG,"No photo cache for "+entry.getDisplayName()+". Fetch one asynchronously");
-          }
         fetchPhotoAsync(entry,photoThumbnailUri);
         }
       }
@@ -796,51 +750,44 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
           // loaded by sending a query to the ContactsProvider.
           final Cursor photoCursor=mContentResolver.query(photoThumbnailUri,PhotoQuery.PROJECTION,null,null,null);
           if(photoCursor!=null)
-            {
             try
               {
               if(photoCursor.moveToFirst())
-                {
                 return photoCursor.getBlob(PhotoQuery.PHOTO);
-                }
+              photoCursor.close();
               }
             finally
               {
               photoCursor.close();
               }
-            }
-          else
+          else // If the query fails, try streaming the URI directly.
+          // For remote directory images, this URI resolves to the
+          // directory provider and the images are loaded by sending
+          // an openFile call to the provider.
+          try
             {
-            // If the query fails, try streaming the URI directly.
-            // For remote directory images, this URI resolves to the
-            // directory provider and the images are loaded by sending
-            // an openFile call to the provider.
-            try
+            final InputStream is=mContentResolver.openInputStream(photoThumbnailUri);
+            if(is!=null)
               {
-              final InputStream is=mContentResolver.openInputStream(photoThumbnailUri);
-              if(is!=null)
+              final byte[] buffer=new byte[BUFFER_SIZE];
+              final ByteArrayOutputStream baos=new ByteArrayOutputStream();
+              try
                 {
-                final byte[] buffer=new byte[BUFFER_SIZE];
-                final ByteArrayOutputStream baos=new ByteArrayOutputStream();
-                try
-                  {
-                  int size;
-                  while((size=is.read(buffer))!=-1)
-                    {
-                    baos.write(buffer,0,size);
-                    }
-                  }
-                finally
-                  {
-                  is.close();
-                  }
-                return baos.toByteArray();
+                int size;
+                while((size=is.read(buffer))!=-1)
+                  baos.write(buffer,0,size);
+                is.close();
                 }
+              finally
+                {
+                is.close();
+                }
+              return baos.toByteArray();
               }
-            catch(final IOException ex)
-              {
-              // ignore
-              }
+            }
+          catch(final IOException ex)
+            {
+            // ignore
             }
           return null;
           }
@@ -869,7 +816,6 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       }
     final Cursor photoCursor=mContentResolver.query(photoThumbnailUri,PhotoQuery.PROJECTION,null,null,null);
     if(photoCursor!=null)
-      {
       try
         {
         if(photoCursor.moveToFirst())
@@ -883,7 +829,6 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
         {
         photoCursor.close();
         }
-      }
     }
 
   public ArrayList<RecipientEntry> doQuery()
@@ -927,9 +872,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       }
     builder.appendQueryParameter(ContactsContract.LIMIT_PARAM_KEY,String.valueOf(limit+ALLOWANCE_FOR_DUPLICATES));
     if(directoryId!=null)
-      {
       builder.appendQueryParameter(ContactsContract.DIRECTORY_PARAM_KEY,String.valueOf(directoryId));
-      }
     if(mAccount!=null)
       {
       builder.appendQueryParameter(PRIMARY_ACCOUNT_NAME,mAccount.name);
@@ -1001,9 +944,7 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
       // We only show the destination for secondary entries, so clear it
       // only for the first level.
       if(entry.isFirstLevel())
-        {
         destination=null;
-        }
       }
     final View itemView=convertView!=null ? convertView : mInflater.inflate(getItemLayout(),parent,false);
     final TextView displayNameView=(TextView)itemView.findViewById(getDisplayNameId());
@@ -1012,16 +953,11 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
     final ImageView imageView=(ImageView)itemView.findViewById(getPhotoId());
     displayNameView.setText(displayName);
     if(!TextUtils.isEmpty(destination))
-      {
       destinationView.setText(destination);
-      }
-    else
-      {
-      destinationView.setText(null);
-      }
+    else destinationView.setText(null);
     if(destinationTypeView!=null)
       {
-      final CharSequence destinationType=mQuery.getTypeLabel(mContext.getResources(),entry.getDestinationType(),entry.getDestinationLabel()).toString().toUpperCase();
+      final CharSequence destinationType=mQuery.getTypeLabel(mContext.getResources(),entry.getDestinationType(),entry.getDestinationLabel()).toString().toUpperCase(Locale.getDefault());
       destinationTypeView.setText(destinationType);
       }
     if(entry.isFirstLevel())
@@ -1036,19 +972,14 @@ public abstract class BaseRecipientAdapter extends BaseAdapter implements Filter
           final Bitmap photo=BitmapFactory.decodeByteArray(photoBytes,0,photoBytes.length);
           imageView.setImageBitmap(photo);
           }
-        else
-          {
-          imageView.setImageResource(getDefaultPhotoResource());
-          }
+        else imageView.setImageResource(getDefaultPhotoResource());
         }
       }
     else
       {
       displayNameView.setVisibility(View.GONE);
       if(imageView!=null)
-        {
         imageView.setVisibility(View.INVISIBLE);
-        }
       }
     return itemView;
     }

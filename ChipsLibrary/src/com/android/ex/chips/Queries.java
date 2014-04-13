@@ -24,23 +24,23 @@ import android.provider.ContactsContract.Contacts;
  * Phone and Email queries for supporting Chips UI.
  */
 /* package */class Queries
+{
+public static final Query PHONE =new Query(new String[] {Contacts.DISPLAY_NAME, // 0
+    Phone.NUMBER, // 1
+    Phone.TYPE, // 2
+    Phone.LABEL, // 3
+    Phone.CONTACT_ID, // 4
+    Phone._ID, // 5
+    Contacts.PHOTO_THUMBNAIL_URI,// 6
+    Contacts.DISPLAY_NAME_SOURCE // 7
+},Phone.CONTENT_FILTER_URI,Phone.CONTENT_URI)
   {
-  public static final Query PHONE =new Query(new String[] {Contacts.DISPLAY_NAME, // 0
-      Phone.NUMBER, // 1
-      Phone.TYPE, // 2
-      Phone.LABEL, // 3
-      Phone.CONTACT_ID, // 4
-      Phone._ID, // 5
-      Contacts.PHOTO_THUMBNAIL_URI,// 6
-      Contacts.DISPLAY_NAME_SOURCE // 7
-                                      },Phone.CONTENT_FILTER_URI,Phone.CONTENT_URI)
-                                    {
-                                      @Override
-                                      public CharSequence getTypeLabel(final Resources res,final int type,final CharSequence label)
-                                        {
-                                        return Phone.getTypeLabel(res,type,label);
-                                        }
-                                    };
+  @Override
+  public CharSequence getTypeLabel(final Resources res,final int type,final CharSequence label)
+    {
+    return Phone.getTypeLabel(res,type,label);
+    }
+  };
   public static final Query EMAIL =new Query(new String[] {Contacts.DISPLAY_NAME, // 0
       Email.DATA, // 1
       Email.TYPE, // 2
@@ -49,16 +49,16 @@ import android.provider.ContactsContract.Contacts;
       Email._ID, // 5
       Contacts.PHOTO_THUMBNAIL_URI,// 6
       Contacts.DISPLAY_NAME_SOURCE // 7
-                                      },Email.CONTENT_FILTER_URI,Email.CONTENT_URI)
-                                    {
-                                      @Override
-                                      public CharSequence getTypeLabel(final Resources res,final int type,final CharSequence label)
-                                        {
-                                        return Email.getTypeLabel(res,type,label);
-                                        }
-                                    };
+  },Email.CONTENT_FILTER_URI,Email.CONTENT_URI)
+    {
+    @Override
+    public CharSequence getTypeLabel(final Resources res,final int type,final CharSequence label)
+      {
+      return Email.getTypeLabel(res,type,label);
+      }
+    };
 
-  static abstract class Query
+    static abstract class Query
     {
     private final String[]  mProjection;
     private final Uri       mContentFilterUri;
@@ -96,4 +96,4 @@ import android.provider.ContactsContract.Contacts;
 
     public abstract CharSequence getTypeLabel(Resources res,int type,CharSequence label);
     }
-  }
+}

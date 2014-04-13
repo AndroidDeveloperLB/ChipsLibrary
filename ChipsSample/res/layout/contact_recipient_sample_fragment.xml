@@ -1,0 +1,72 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        tools:context=".MainActivity" >
+
+        <TextView android:id="@+id/device_recipients_tutorialTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/device_recipients_tutorial" />
+
+        <com.android.ex.chips.RecipientEditTextView
+            android:id="@+id/email_retv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/email_addresses"
+            android:minHeight="58dp" />
+
+        <LinearLayout
+            android:id="@+id/searchContainer"
+            style="@android:style/Widget.EditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:addStatesFromChildren="true"
+            android:minHeight="54dp"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/toTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginRight="4dp"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:gravity="center_vertical"
+                android:text="@string/to"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="16sp" />
+
+            <com.android.ex.chips.RecipientEditTextView
+                android:id="@+id/phone_retv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:hint="@string/phone_numbers"
+                android:scrollbars="vertical" >
+
+            </com.android.ex.chips.RecipientEditTextView>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/addRecipientButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/add_a_random_recipient" />
+
+        <Button
+            android:id="@+id/removeRecipientButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/remove_a_random_recipient" />
+    </LinearLayout>
+
+</ScrollView>

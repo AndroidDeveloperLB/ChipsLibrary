@@ -1,0 +1,46 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        tools:context=".MainActivity" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/custom_recipients_tutorial" />
+
+        <com.android.ex.chips.RecipientEditTextView
+            android:id="@+id/custom_retv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="58dp" >
+
+        </com.android.ex.chips.RecipientEditTextView>
+
+        <Button
+            android:id="@+id/addRecipientButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/add_a_random_recipient" />
+
+        <Button
+            android:id="@+id/removeRecipientButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/remove_a_random_recipient" />
+
+        <TextView
+            android:id="@+id/availableRecipientsTextView"
+            android:layout_width="wrap_content" android:text="@string/available_recipients_list_"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+</ScrollView>

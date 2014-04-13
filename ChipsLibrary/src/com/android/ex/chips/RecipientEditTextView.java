@@ -20,9 +20,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -81,6 +82,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewParent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
@@ -102,29 +104,31 @@ import com.android.ex.chips.recipientchip.VisibleRecipientChip;
  */
 public class RecipientEditTextView extends MultiAutoCompleteTextView implements Callback,RecipientAlternatesAdapter.OnCheckedItemChangedListener,GestureDetector.OnGestureListener,OnDismissListener,OnClickListener,TextView.OnEditorActionListener
   {
+  /** max pixels till touching up/down out of the initial touch coordinate is considered as scrolling */
+  private static final int                 SCROLLING_BOUNDS_THRESHOLD_IN_PIXELS =2;
   /**
    * This pattern comes from android.util.Patterns. It has been tweaked to handle a "1" before parens, so numbers such
    * as "1 (425) 222-2342" match.
    */
-  private static final Pattern             PHONE_PATTERN         =Pattern.compile( // sdd = space, dot, or dash
-                                                                     "(\\+[0-9]+[\\- \\.]*)?" // +<digits><sdd>*
-                                                                         +"(1?[ ]*\\([0-9]+\\)[\\- \\.]*)?" // 1(<digits>)<sdd>*
-                                                                         +"([0-9][0-9\\- \\.][0-9\\- \\.]+[0-9])");                   // <digit><digit|sdd>+<digit>
-  private static final char                COMMIT_CHAR_COMMA     =',';
-  private static final char                COMMIT_CHAR_SEMICOLON =';';
-  private static final char                COMMIT_CHAR_SPACE     =' ';
-  private static final String              SEPARATOR             =String.valueOf(COMMIT_CHAR_COMMA)+String.valueOf(COMMIT_CHAR_SPACE);
-  private static final String              TAG                   ="RecipientEditTextView";
-  private static final int                 DISMISS               ="dismiss".hashCode();
-  private static final long                DISMISS_DELAY         =300;
+  private static final Pattern             PHONE_PATTERN                        =Pattern.compile( // sdd = space, dot, or dash
+                                                                                    "(\\+[0-9]+[\\- \\.]*)?" // +<digits><sdd>*
+                                                                                        +"(1?[ ]*\\([0-9]+\\)[\\- \\.]*)?" // 1(<digits>)<sdd>*
+                                                                                        +"([0-9][0-9\\- \\.][0-9\\- \\.]+[0-9])");                   // <digit><digit|sdd>+<digit>
+  private static final char                COMMIT_CHAR_COMMA                    =',';
+  private static final char                COMMIT_CHAR_SEMICOLON                =';';
+  private static final char                COMMIT_CHAR_SPACE                    =' ';
+  private static final String              SEPARATOR                            =String.valueOf(COMMIT_CHAR_COMMA)+String.valueOf(COMMIT_CHAR_SPACE);
+  private static final String              TAG                                  ="RecipientEditTextView";
+  private static final int                 DISMISS                              ="dismiss".hashCode();
+  private static final long                DISMISS_DELAY                        =300;
   // TODO: get correct number/ algorithm from with UX.
   // Visible for testing.
-  /* package */static final int            CHIP_LIMIT            =2;
-  private static final int                 MAX_CHIPS_PARSED      =50;
-  private static int                       sSelectedTextColor    =-1;
+  /* package */static final int            CHIP_LIMIT                           =2;
+  private static final int                 MAX_CHIPS_PARSED                     =50;
+  private static int                       sSelectedTextColor                   =-1;
   // Resources for displaying chips.
-  private Drawable                         mChipBackground       =null;
-  private Drawable                         mChipDelete           =null;
+  private Drawable                         mChipBackground                      =null;
+  private Drawable                         mChipDelete                          =null;
   private Drawable                         mInvalidChipBackground;
   private Drawable                         mChipBackgroundPressed;
   private float                            mChipHeight;
@@ -139,15 +143,15 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
   private ImageSpan                        mMoreChip;
   private TextView                         mMoreItem;
   // VisibleForTesting
-  private final ArrayList<String>          mPendingChips         =new ArrayList<String>();
+  private final ArrayList<String>          mPendingChips                        =new ArrayList<String>();
   private final Handler                    mHandler;
-  private int                              mPendingChipsCount    =0;
-  private boolean                          mNoChips              =false;
+  private int                              mPendingChipsCount                   =0;
+  private boolean                          mNoChips                             =false;
   private ListPopupWindow                  mAlternatesPopup,mAddressPopup;
   // VisibleForTesting
   private ArrayList<DrawableRecipientChip> mTemporaryRecipients;
   private ArrayList<DrawableRecipientChip> mRemovedSpans;
-  private boolean                          mShouldShrink         =true;
+  private boolean                          mShouldShrink                        =true;
   // Chip copy fields.
   private GestureDetector                  mGestureDetector;
   private final Dialog                     mCopyDialog;
@@ -163,7 +167,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
   private ScrollView                       mScrollView;
   private boolean                          mTriedGettingScrollView;
   private int                              mMaxLines;
-  private static int                       sExcessTopPadding     =-1;
+  private static int                       sExcessTopPadding                    =-1;
   private int                              mActionBarHeight;
   private boolean                          mAttachedToWindow;
   private final Runnable                   mAddTextWatcher;
@@ -171,6 +175,16 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
   private final Runnable                   mDelayedShrink;
   private IndividualReplacementTask        mIndividualReplacements;
   private IChipListener                    mChipListener;
+  private int                              mPreviousChipsCount                  =0;
+  private final EnumSet<FocusBehavior>     mFocusBehavior                       =EnumSet.allOf(FocusBehavior.class);
+  /** used to store initial touch Y coordinate, in order to identify scrolling */
+  private int                              mStartTouchY                         =-1;
+  private boolean                          mIsScrolling                         =false;
+
+  public enum FocusBehavior
+    {
+    SHRINK_WHEN_LOST_FOCUS,EXPAND_WHEN_GOT_FOCUS
+    }
 
   public interface IChipListener
     {
@@ -396,8 +410,12 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
     {
     super.onFocusChanged(hasFocus,direction,previous);
     if(!hasFocus)
-      shrink();
-    else expand();
+      {
+      if(mFocusBehavior.contains(FocusBehavior.SHRINK_WHEN_LOST_FOCUS))
+        shrink();
+      }
+    else if(mFocusBehavior.contains(FocusBehavior.EXPAND_WHEN_GOT_FOCUS))
+      expand();
     }
 
   private int getExcessTopPadding()
@@ -740,7 +758,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
    * Set whether to shrink the recipients field such that at most one line of recipients chips are shown when the
    * field loses focus. By default, the number of displayed recipients will be limited and a "more" chip will be shown
    * when focus is lost.
-   * 
+   *
    * @param shrink
    */
   public void setOnFocusListShrinkRecipients(final boolean shrink)
@@ -928,7 +946,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
         {
         Log.e(TAG,e.getMessage(),e);
         }
-      editable.setSpan(chip,tokenStart,tokenEnd,Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      editable.setSpan(chip,tokenStart,tokenEnd,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       // Add this chip to the list of entries "to replace"
       if(chip!=null)
         {
@@ -1097,7 +1115,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
    * Create a chip from the default selection. If the popup is showing, the default is the first item in the popup
    * suggestions list. Otherwise, it is whatever the user had typed in. End represents where the the tokenizer should
    * search for a token to turn into a chip.
-   * 
+   *
    * @return If a chip was created from a real contact.
    */
   private boolean commitDefault()
@@ -1262,7 +1280,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
       {
       if(mAlternatesPopup!=null&&mAlternatesPopup.isShowing())
         mAlternatesPopup.dismiss();
-      removeChip(mSelectedChip);
+      removeChip(mSelectedChip,true);
       }
     switch(keyCode)
       {
@@ -1362,40 +1380,59 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
     if(!isFocused())
       // Ignore any chip taps until this view is focused.
       return super.onTouchEvent(event);
+    android.util.Log.d("AppLog","scroll:"+getScrollY());
     boolean handled=super.onTouchEvent(event);
     final int action=event.getAction();
     boolean chipWasSelected=false;
     if(mSelectedChip==null)
       mGestureDetector.onTouchEvent(event);
-    if(mCopyAddress==null&&action==MotionEvent.ACTION_UP)
+    switch(action)
       {
-      final float x=event.getX();
-      final float y=event.getY();
-      final int offset=putOffsetInRange(x,y);
-      final DrawableRecipientChip currentChip=findChip(offset);
-      if(currentChip!=null)
-        {
-        if(action==MotionEvent.ACTION_UP)
-          if(mSelectedChip!=null&&mSelectedChip!=currentChip)
+      case MotionEvent.ACTION_DOWN:
+        mIsScrolling=false;
+        mStartTouchY=(int)event.getY();
+        break;
+      case MotionEvent.ACTION_MOVE:
+        if(Math.abs(event.getY()-mStartTouchY)>SCROLLING_BOUNDS_THRESHOLD_IN_PIXELS)
+          mIsScrolling=true;
+        break;
+      case MotionEvent.ACTION_UP:
+        if(mIsScrolling)
+          {
+          mIsScrolling=false;
+          break;
+          }
+        if(mCopyAddress==null)
+          {
+          final float x=event.getX();
+          final float y=event.getY();
+          final int offset=putOffsetInRange(x,y);
+          final DrawableRecipientChip currentChip=findChip(offset);
+          if(currentChip!=null)
             {
-            clearSelectedChip();
-            mSelectedChip=selectChip(currentChip);
+            if(action==MotionEvent.ACTION_UP)
+              if(mSelectedChip!=null&&mSelectedChip!=currentChip)
+                {
+                clearSelectedChip();
+                mSelectedChip=selectChip(currentChip);
+                }
+              else if(mSelectedChip==null)
+                {
+                setSelection(getText().length());
+                commitDefault();
+                mSelectedChip=selectChip(currentChip);
+                }
+              else onClick(mSelectedChip,offset,x,y);
+            chipWasSelected=true;
+            handled=true;
             }
-          else if(mSelectedChip==null)
-            {
-            setSelection(getText().length());
-            commitDefault();
-            mSelectedChip=selectChip(currentChip);
-            }
-          else onClick(mSelectedChip,offset,x,y);
-        chipWasSelected=true;
-        handled=true;
-        }
-      else if(mSelectedChip!=null&&shouldShowEditableText(mSelectedChip))
-        chipWasSelected=true;
+          else if(mSelectedChip!=null&&shouldShowEditableText(mSelectedChip))
+            chipWasSelected=true;
+          }
+        if(!chipWasSelected)
+          clearSelectedChip();
+        break;
       }
-    if(action==MotionEvent.ACTION_UP&&!chipWasSelected)
-      clearSelectedChip();
     return handled;
     }
 
@@ -1436,7 +1473,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
           mCheckedItem=-1;
           alternatesPopup.show();
           final ListView listView=alternatesPopup.getListView();
-          listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+          listView.setChoiceMode(AbsListView.CHOICE_MODE_SINGLE);
           // Checked item would be -1 if the adapter has not
           // loaded the view that should be checked yet. The
           // variable will be set correctly when onCheckedItemChanged
@@ -1601,7 +1638,17 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
     final RecipientEntry entry=createValidatedEntry(getAdapter().getItem(position));
     if(entry==null)
       return;
-    addRecipient(entry);
+    clearComposingText();
+    final int end=getSelectionEnd();
+    final int start=mTokenizer.findTokenStart(getText(),end);
+    final Editable editable=getText();
+    QwertyKeyListener.markAsReplaced(editable,start,end,"");
+    final CharSequence chip=createChip(entry,false);
+    if(chip!=null&&start>=0&&end>=0)
+      editable.replace(start,end,chip);
+    sanitizeBetween();
+    if(mChipListener!=null)
+      mChipListener.onDataChanged();
     }
 
   private RecipientEntry createValidatedEntry(final RecipientEntry item)
@@ -1852,7 +1899,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
           end=chipEnd=Math.min(editable.length(),chipStart+token.length());
           // Only set the span if we found a matching token.
           if(chipStart!=-1)
-            editable.setSpan(chip,chipStart,chipEnd,Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            editable.setSpan(chip,chipStart,chipEnd,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
           }
         mRemovedSpans.clear();
         }
@@ -1865,7 +1912,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
    * RecipientChip is a complete contact, then selecting the chip will change the background color of the chip, show
    * the delete icon, and a popup window with the address in use highlighted and any other alternate addresses for the
    * contact.
-   * 
+   *
    * @param currentChip
    * Chip to select.
    * @return A RecipientChip in the selected state or null if the chip just contained an email address.
@@ -1973,7 +2020,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
       });
     popup.show();
     final ListView listView=popup.getListView();
-    listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+    listView.setChoiceMode(AbsListView.CHOICE_MODE_SINGLE);
     listView.setItemChecked(0,true);
     }
 
@@ -2018,7 +2065,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
    * Return whether a touch event was inside the delete target of a selected chip. It is in the delete target if: 1)
    * the x and y points of the event are within the delete assset. 2) the point tapped would have caused a cursor to
    * appear right after the selected chip.
-   * 
+   *
    * @return boolean
    */
   private boolean isInDelete(final DrawableRecipientChip chip,final int offset,final float x,final float y)
@@ -2031,10 +2078,14 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
 
   /**
    * Remove the chip and any text associated with it from the RecipientEditTextView.
+   *
+   * @param alsoNotifyAboutDataChanges
    */
   // Visible for testing.
-  /* package */void removeChip(final DrawableRecipientChip chip)
+  /* package */void removeChip(final DrawableRecipientChip chip,final boolean alsoNotifyAboutDataChanges)
     {
+    if(!alsoNotifyAboutDataChanges)
+      --mPreviousChipsCount;
     final Spannable spannable=getSpannable();
     final int spanStart=spannable.getSpanStart(chip);
     final int spanEnd=spannable.getSpanEnd(chip);
@@ -2052,8 +2103,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
       text.delete(spanStart,toDelete);
     if(wasSelected)
       clearSelectedChip();
-    if(mChipListener!=null)
-      mChipListener.onDataChanged();
     }
 
   /**
@@ -2100,7 +2149,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
     {
     if(chip.isSelected())
       if(isInDelete(chip,offset,x,y))
-        removeChip(chip);
+        removeChip(chip,true);
       else clearSelectedChip();
     }
 
@@ -2397,8 +2446,6 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
   // ///////////////////////
   private class RecipientTextWatcher implements TextWatcher
     {
-    int previousChipsCount =0;
-
     @Override
     public void afterTextChanged(final Editable s)
       {
@@ -2468,9 +2515,9 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
         {
         final DrawableRecipientChip[] chips=getSpannable().getSpans(0,getText().length(),DrawableRecipientChip.class);
         final int chipsCount=chips.length;
-        if(previousChipsCount>chipsCount&&mChipListener!=null)
+        if(mPreviousChipsCount>chipsCount&&mChipListener!=null)
           mChipListener.onDataChanged();
-        previousChipsCount=chipsCount;
+        mPreviousChipsCount=chipsCount;
         }
       if(before-count==1)
         {
@@ -2505,6 +2552,9 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
     public void beforeTextChanged(final CharSequence s,final int start,final int count,final int after)
       {
       // Do nothing.
+      // final DrawableRecipientChip[] chips = getSpannable().getSpans(0, getText().length(),
+      // DrawableRecipientChip.class);
+      // previousChipsCount = chips.length;
       }
     }
 
@@ -2692,7 +2742,7 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
               if(RecipientEntry.isCreatedRecipient(temp.getEntry().getContactId())&&getSpannable().getSpanStart(temp)!=-1)
                 {
                 // Replace this.
-                final RecipientEntry entry=createValidatedEntry(entries.get(tokenizeAddress(temp.getEntry().getDestination()).toLowerCase()));
+                final RecipientEntry entry=createValidatedEntry(entries.get(tokenizeAddress(temp.getEntry().getDestination()).toLowerCase(Locale.getDefault())));
                 if(entry!=null)
                   mHandler.post(new Runnable()
                     {
@@ -2722,46 +2772,85 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
     }
 
   /** adds a recipient to the view. note that it should be called when the view has determined its size */
-  public void addRecipient(final RecipientEntry entry)
+  public void addRecipient(final RecipientEntry entry,final boolean alsoNotifyAboutDataChanges)
     {
     if(entry==null)
       return;
-    clearComposingText();
-    final int end=getSelectionEnd();
-    final int start=mTokenizer.findTokenStart(getText(),end);
+    // clearComposingText();
     final Editable editable=getText();
-    QwertyKeyListener.markAsReplaced(editable,start,end,"");
+    // QwertyKeyListener.markAsReplaced(editable, start, end, "");
     final CharSequence chip=createChip(entry,false);
-    if(chip!=null&&start>=0&&end>=0)
-      editable.replace(start,end,chip);
+    if(!alsoNotifyAboutDataChanges)
+      ++mPreviousChipsCount;
+    // expand();
+    if(chip!=null)
+      editable.append(chip);
     sanitizeBetween();
-    if(mChipListener!=null)
-      mChipListener.onDataChanged();
+    // shrink();
     }
 
   /** removes a chip of a recipient from the view */
-  public void removeRecipient(final RecipientEntry entry)
+  public void removeRecipient(final RecipientEntry entry,final boolean alsoNotifyAboutDataChanges)
     {
+    if(entry==null)
+      return;
+    // expand();
     final DrawableRecipientChip[] chips=getSpannable().getSpans(0,getText().length(),DrawableRecipientChip.class);
     final List<DrawableRecipientChip> chipsToRemove=new ArrayList<DrawableRecipientChip>();
     for(final DrawableRecipientChip chip : chips)
       if(chip.getDataId()==entry.getDataId())
         chipsToRemove.add(chip);
     for(final DrawableRecipientChip chip : chipsToRemove)
-      removeChip(chip);
+      removeChip(chip,alsoNotifyAboutDataChanges);
+    // shrink();
+    }
+
+  public void removeAllRecipients(final boolean alsoNotifyAboutDataChanges)
+    {
+    final DrawableRecipientChip[] chips=getSpannable().getSpans(0,getText().length(),DrawableRecipientChip.class);
+    for(final DrawableRecipientChip chip : chips)
+      removeChip(chip,alsoNotifyAboutDataChanges);
     }
 
   /** returns a collection of all of the chips' items. key is the contact id, and the value is the recipient itself */
-  public Map<Long,RecipientEntry> getRecipients()
+  public Set<RecipientEntry> getChosenRecipients()
     {
-    final Map<Long,RecipientEntry> result=new HashMap<Long,RecipientEntry>();
+    final Set<RecipientEntry> result=new HashSet<RecipientEntry>();
     final DrawableRecipientChip[] chips=getSpannable().getSpans(0,getText().length(),DrawableRecipientChip.class);
     for(final DrawableRecipientChip chip : chips)
       {
-      final long contactId=chip.getContactId();
-      if(!result.containsKey(contactId))
-        result.put(contactId,chip.getEntry());
+      final RecipientEntry recipientEntry=chip.getEntry();
+      result.add(recipientEntry);
       }
     return result;
+    }
+
+  /**
+   * sets exact recipients to be chosen. <br/>
+   * each previous chip will stay only if it really matches one of the recipients. <br/>
+   * note that this function will not notify about data changes
+   */
+  public void setChosenRecipients(final Set<RecipientEntry> recipientsToSet)
+    {
+    final Set<RecipientEntry> currentRecipients=getChosenRecipients();
+    final List<RecipientEntry> toRemove=new ArrayList<RecipientEntry>(),toAdd=new ArrayList<RecipientEntry>();
+    // check which to remove - items that exist on the editText but not on the list
+    for(final RecipientEntry recipientEntry : currentRecipients)
+      if(!recipientsToSet.contains(recipientEntry))
+        toRemove.add(recipientEntry);
+    // check which to add - items that exist on the list, but not on the editText
+    for(final RecipientEntry recipientEntry : recipientsToSet)
+      if(!currentRecipients.contains(recipientEntry))
+        toAdd.add(recipientEntry);
+    for(final RecipientEntry recipientEntry : toRemove)
+      removeRecipient(recipientEntry,false);
+    for(final RecipientEntry recipientEntry : toAdd)
+      addRecipient(recipientEntry,false);
+    }
+
+  public void setFocusBehavior(final EnumSet<FocusBehavior> focusBehavior)
+    {
+    mFocusBehavior.clear();
+    mFocusBehavior.addAll(focusBehavior);
     }
   }

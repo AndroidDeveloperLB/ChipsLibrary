@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import android.accounts.Account;
@@ -76,7 +77,7 @@ public class RecipientAlternatesAdapter extends CursorAdapter
   /**
    * Get a HashMap of address to RecipientEntry that contains all contact information for a contact with the provided
    * address, if one exists. This may block the UI, so run it in an async task.
-   * 
+   *
    * @param context
    * Context.
    * @param inAddresses
@@ -89,31 +90,22 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     {
     Queries.Query query;
     if(addressType==QUERY_TYPE_EMAIL)
-      {
       query=Queries.EMAIL;
-      }
-    else
-      {
-      query=Queries.PHONE;
-      }
+    else query=Queries.PHONE;
     final int addressesSize=Math.min(MAX_LOOKUPS,inAddresses.size());
     final HashSet<String> addresses=new HashSet<String>();
     final StringBuilder bindString=new StringBuilder();
     // Create the "?" string and set up arguments.
     for(int i=0;i<addressesSize;i++)
       {
-      final Rfc822Token[] tokens=Rfc822Tokenizer.tokenize(inAddresses.get(i).toLowerCase());
+      final Rfc822Token[] tokens=Rfc822Tokenizer.tokenize(inAddresses.get(i).toLowerCase(Locale.getDefault()));
       addresses.add(tokens.length>0 ? tokens[0].getAddress() : inAddresses.get(i));
       bindString.append("?");
       if(i<addressesSize-1)
-        {
         bindString.append(",");
-        }
       }
     if(Log.isLoggable(TAG,Log.DEBUG))
-      {
       Log.d(TAG,"Doing reverse lookup for "+addresses.toString());
-      }
     final String[] addressArray=new String[addresses.size()];
     addresses.toArray(addressArray);
     HashMap<String,RecipientEntry> recipientEntries=null;
@@ -127,9 +119,7 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     finally
       {
       if(c!=null)
-        {
         c.close();
-        }
       }
     // See if any entries did not resolve; if so, we need to check other
     // directories
@@ -142,38 +132,25 @@ public class RecipientAlternatesAdapter extends CursorAdapter
         {
         directoryCursor=context.getContentResolver().query(DirectoryListQuery.URI,DirectoryListQuery.PROJECTION,null,null,null);
         if(directoryCursor==null)
-          {
           paramsList=null;
-          }
-        else
-          {
-          paramsList=BaseRecipientAdapter.setupOtherDirectories(context,directoryCursor,account);
-          }
+        else paramsList=BaseRecipientAdapter.setupOtherDirectories(context,directoryCursor,account);
         }
       finally
         {
         if(directoryCursor!=null)
-          {
           directoryCursor.close();
-          }
         }
       // Run a directory query for each unmatched recipient.
       final HashSet<String> unresolvedAddresses=new HashSet<String>();
       for(final String address : addresses)
-        {
         if(!recipientEntries.containsKey(address))
-          {
           unresolvedAddresses.add(address);
-          }
-        }
       matchesNotFound.addAll(unresolvedAddresses);
       if(paramsList!=null)
         {
         Cursor directoryContactsCursor=null;
         for(final String unresolvedAddress : unresolvedAddresses)
-          {
           for(int i=0;i<paramsList.size();i++)
-            {
             try
               {
               directoryContactsCursor=doQuery(unresolvedAddress,1,paramsList.get(i).directoryId,account,context.getContentResolver(),query);
@@ -185,29 +162,8 @@ public class RecipientAlternatesAdapter extends CursorAdapter
                 directoryContactsCursor.close();
                 directoryContactsCursor=null;
                 }
-              else
-                {
-                break;
-                }
+              else break;
               }
-            }
-          if(directoryContactsCursor!=null)
-            {
-            try
-              {
-              final Map<String,RecipientEntry> entries=processContactEntries(directoryContactsCursor);
-              for(final String address : entries.keySet())
-                {
-                matchesNotFound.remove(address);
-                }
-              callback.matchesFound(entries);
-              }
-            finally
-              {
-              directoryContactsCursor.close();
-              }
-            }
-          }
         }
       }
     // If no matches found in contact provider or the directories, try the extension
@@ -220,9 +176,7 @@ public class RecipientAlternatesAdapter extends CursorAdapter
         {
         callback.matchesFound(entries);
         for(final String address : entries.keySet())
-          {
           matchesNotFound.remove(address);
-          }
         }
       }
     callback.matchesNotFound(matchesNotFound);
@@ -232,7 +186,6 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     {
     final HashMap<String,RecipientEntry> recipientEntries=new HashMap<String,RecipientEntry>();
     if(c!=null&&c.moveToFirst())
-      {
       do
         {
         final String address=c.getString(Queries.Query.DESTINATION);
@@ -248,12 +201,9 @@ public class RecipientAlternatesAdapter extends CursorAdapter
         final RecipientEntry recipientEntry=getBetterRecipient(recipientEntries.get(address),newRecipientEntry);
         recipientEntries.put(address,recipientEntry);
         if(Log.isLoggable(TAG,Log.DEBUG))
-          {
           Log.d(TAG,"Received reverse look up information for "+address+" RESULTS: "+" NAME : "+c.getString(Queries.Query.NAME)+" CONTACT ID : "+c.getLong(Queries.Query.CONTACT_ID)+" ADDRESS :"+c.getString(Queries.Query.DESTINATION));
-          }
         }
       while(c.moveToNext());
-      }
     return recipientEntries;
     }
 
@@ -266,40 +216,24 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     {
     // If only one has passed in, use it
     if(entry2==null)
-      {
       return entry1;
-      }
     if(entry1==null)
-      {
       return entry2;
-      }
     // If only one has a display name, use it
     if(!TextUtils.isEmpty(entry1.getDisplayName())&&TextUtils.isEmpty(entry2.getDisplayName()))
-      {
       return entry1;
-      }
     if(!TextUtils.isEmpty(entry2.getDisplayName())&&TextUtils.isEmpty(entry1.getDisplayName()))
-      {
       return entry2;
-      }
     // If only one has a display name that is not the same as the destination, use it
     if(!TextUtils.equals(entry1.getDisplayName(),entry1.getDestination())&&TextUtils.equals(entry2.getDisplayName(),entry2.getDestination()))
-      {
       return entry1;
-      }
     if(!TextUtils.equals(entry2.getDisplayName(),entry2.getDestination())&&TextUtils.equals(entry1.getDisplayName(),entry1.getDestination()))
-      {
       return entry2;
-      }
     // If only one has a photo, use it
     if((entry1.getPhotoThumbnailUri()!=null||entry1.getPhotoBytes()!=null)&&entry2.getPhotoThumbnailUri()==null&&entry2.getPhotoBytes()==null)
-      {
       return entry1;
-      }
     if((entry2.getPhotoThumbnailUri()!=null||entry2.getPhotoBytes()!=null)&&entry1.getPhotoThumbnailUri()==null&&entry1.getPhotoBytes()==null)
-      {
       return entry2;
-      }
     // Go with the second option as a default
     return entry2;
     }
@@ -320,9 +254,7 @@ public class RecipientAlternatesAdapter extends CursorAdapter
       selectionArgs=new String[] {constraintStr,constraintStr};
       }
     if(directoryId!=null)
-      {
       builder.appendQueryParameter(ContactsContract.DIRECTORY_PARAM_KEY,String.valueOf(directoryId));
-      }
     if(account!=null)
       {
       builder.appendQueryParameter(BaseRecipientAdapter.PRIMARY_ACCOUNT_NAME,account.name);
@@ -352,13 +284,9 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     mCurrentId=currentId;
     mCheckedItemChangedListener=listener;
     if(queryMode==QUERY_TYPE_EMAIL)
-      {
       mQuery=Queries.EMAIL;
-      }
     else if(queryMode==QUERY_TYPE_PHONE)
-      {
       mQuery=Queries.PHONE;
-      }
     else
       {
       mQuery=Queries.EMAIL;
@@ -370,13 +298,8 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     {
     final Cursor cursor;
     if(queryType==QUERY_TYPE_EMAIL)
-      {
       cursor=context.getContentResolver().query(Queries.EMAIL.getContentUri(),Queries.EMAIL.getProjection(),Queries.EMAIL.getProjection()[Queries.Query.CONTACT_ID]+" =?",new String[] {String.valueOf(contactId)},null);
-      }
-    else
-      {
-      cursor=context.getContentResolver().query(Queries.PHONE.getContentUri(),Queries.PHONE.getProjection(),Queries.PHONE.getProjection()[Queries.Query.CONTACT_ID]+" =?",new String[] {String.valueOf(contactId)},null);
-      }
+    else cursor=context.getContentResolver().query(Queries.PHONE.getContentUri(),Queries.PHONE.getProjection(),Queries.PHONE.getProjection()[Queries.Query.CONTACT_ID]+" =?",new String[] {String.valueOf(contactId)},null);
     return removeDuplicateDestinations(cursor);
     }
 
@@ -398,9 +321,7 @@ public class RecipientAlternatesAdapter extends CursorAdapter
       {
       final String destination=original.getString(Query.DESTINATION);
       if(destinationsSeen.contains(destination))
-        {
         continue;
-        }
       destinationsSeen.add(destination);
       result.addRow(new Object[] {original.getString(Query.NAME),original.getString(Query.DESTINATION),original.getInt(Query.DESTINATION_TYPE),original.getString(Query.DESTINATION_LABEL),original.getLong(Query.CONTACT_ID),original.getLong(Query.DATA_ID),original.getString(Query.PHOTO_THUMBNAIL_URI),original.getInt(Query.DISPLAY_NAME_SOURCE)});
       }
@@ -412,9 +333,7 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     {
     final Cursor c=getCursor();
     if(c.moveToPosition(position))
-      {
       c.getLong(Queries.Query.DATA_ID);
-      }
     return -1;
     }
 
@@ -434,16 +353,12 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     final Cursor cursor=getCursor();
     cursor.moveToPosition(position);
     if(convertView==null)
-      {
       convertView=newView();
-      }
     if(cursor.getLong(Queries.Query.DATA_ID)==mCurrentId)
       {
       mCheckedItemPosition=position;
       if(mCheckedItemChangedListener!=null)
-        {
         mCheckedItemChangedListener.onCheckedItemChanged(mCheckedItemPosition);
-        }
       }
     bindView(convertView,convertView.getContext(),cursor);
     return convertView;
@@ -476,9 +391,7 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     destination.setText(cursor.getString(Queries.Query.DESTINATION));
     final TextView destinationType=(TextView)view.findViewById(android.R.id.text2);
     if(destinationType!=null)
-      {
-      destinationType.setText(mQuery.getTypeLabel(context.getResources(),cursor.getInt(Queries.Query.DESTINATION_TYPE),cursor.getString(Queries.Query.DESTINATION_LABEL)).toString().toUpperCase());
-      }
+      destinationType.setText(mQuery.getTypeLabel(context.getResources(),cursor.getInt(Queries.Query.DESTINATION_TYPE),cursor.getString(Queries.Query.DESTINATION_LABEL)).toString().toUpperCase(Locale.getDefault()));
     }
 
   @Override
