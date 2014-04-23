@@ -27,7 +27,7 @@ Of course, you can always revert back to what Google has done, if you wish.
  9. getChosenRecipients - returns all of the chosen recipients
  
  IMPORTANT: you can only safely call the recipients' operations after the view got its size feagured out. 
-You can use the sample's code for this, using the function "runJustBeforeBeingDrawn", in case you need to use those operations as soon as possible.  
+You can use the function "runJustBeforeBeingDrawn" as I've written on some StackOverflow posts (like [**here**][4]), in case you need to use those operations as soon as possible.  
 
  In order to make it easy for you to find the code for those added features, I've put them all at the end of "RecipientEditTextView.java" file.
 
@@ -51,3 +51,4 @@ If you've noticed a bug, please write about it, especially if you know how to fi
   [1]: https://plus.google.com/+RichHyndman/posts/TSxaARVsRjF
   [2]: http://https://android.googlesource.com/platform/frameworks/ex/+/android-sdk-support_r11/chips/
   [3]: https://lh3.googleusercontent.com/-0tiDXRdjE9w/UEKSRdUaS6I/AAAAAAAAoqw/thtcKMWSWKs/w393-h683-no/png.png
+  [4]: http://stackoverflow.com/a/10923514/878126
