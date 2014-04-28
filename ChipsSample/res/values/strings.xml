@@ -11,10 +11,13 @@
     <string name="all_my_repositories">All my repositories</string>
     <string name="all_my_apps">All my apps</string>
     <string name="more_info">More info</string>
-    <string name="device_recipients_tutorial">This demonstrates how to use the device\'s contacts as the list of recipients.</string>    <string name="device_recipients_tutorial_unavailable">This demonstrates how to use the device\'s contacts as the list of recipients.
+    <string name="device_recipients_tutorial">This demonstrates how to use the device\'s contacts as the list of recipients.</string>
+    <string name="device_recipients_tutorial_unavailable">This demonstrates how to use the device\'s contacts as the list of recipients.
         \nIt\'s not supported for the demo versions, as they don\'t allow using the permission to read from contacts
         \nIn order to check out the full sample, you need to check out the original code</string>
-    <string name="custom_recipients_tutorial">This demonstrates how to put your own customized list of recipients</string>
+    <string name="custom_recipients_tutorial">This demonstrates how to put your own customized list of recipients. 
+        \nIt shows fake contacts, and as opposed to the original sample, clicking a chip will only allow you to remove it, instead of showing alternatives to choose from.
+        \nOf course, it\'s possible to do it yourself&#8230;</string>
     <string name="available_recipients_list_">available recipients list:</string>
 
 </resources>

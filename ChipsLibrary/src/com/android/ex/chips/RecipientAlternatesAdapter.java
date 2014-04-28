@@ -277,7 +277,8 @@ public class RecipientAlternatesAdapter extends CursorAdapter
     this(context,contactId,currentId,QUERY_TYPE_EMAIL,listener);
     }
 
-  public RecipientAlternatesAdapter(final Context context,final long contactId,final long currentId,final int queryMode,final OnCheckedItemChangedListener listener)
+  public RecipientAlternatesAdapter(final Context context,final long contactId,final long currentId,//
+      final int queryMode,final OnCheckedItemChangedListener listener)
     {
     super(context,getCursorForConstruction(context,contactId,queryMode),0);
     mLayoutInflater=LayoutInflater.from(context);
@@ -294,7 +295,24 @@ public class RecipientAlternatesAdapter extends CursorAdapter
       }
     }
 
-  private static Cursor getCursorForConstruction(final Context context,final long contactId,final int queryType)
+  public RecipientAlternatesAdapter(final Context context,final Cursor c,final long currentId,final int queryMode,final OnCheckedItemChangedListener listener)
+    {
+    super(context,c,0);
+    mLayoutInflater=LayoutInflater.from(context);
+    mCurrentId=currentId;
+    mCheckedItemChangedListener=listener;
+    if(queryMode==QUERY_TYPE_EMAIL)
+      mQuery=Queries.EMAIL;
+    else if(queryMode==QUERY_TYPE_PHONE)
+      mQuery=Queries.PHONE;
+    else
+      {
+      mQuery=Queries.EMAIL;
+      Log.e(TAG,"Unsupported query type: "+queryMode);
+      }
+    }
+
+  protected static Cursor getCursorForConstruction(final Context context,final long contactId,final int queryType)
     {
     final Cursor cursor;
     if(queryType==QUERY_TYPE_EMAIL)

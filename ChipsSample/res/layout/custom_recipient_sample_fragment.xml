@@ -15,13 +15,11 @@
             android:layout_height="wrap_content"
             android:text="@string/custom_recipients_tutorial" />
 
-        <com.android.ex.chips.RecipientEditTextView
+        <com.android.ex.chips.sample.CustomRecipientEditTextView
             android:id="@+id/custom_retv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="58dp" >
-
-        </com.android.ex.chips.RecipientEditTextView>
+            android:minHeight="58dp" />
 
         <Button
             android:id="@+id/addRecipientButton"
@@ -39,8 +37,9 @@
 
         <TextView
             android:id="@+id/availableRecipientsTextView"
-            android:layout_width="wrap_content" android:text="@string/available_recipients_list_"
-            android:layout_height="wrap_content" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/available_recipients_list_" />
     </LinearLayout>
 
 </ScrollView>
