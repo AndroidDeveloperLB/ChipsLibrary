@@ -47,6 +47,9 @@ If you've noticed a bug, please write about it, especially if you know how to fi
 
 - Be sure to check the sample. It's a bit messy, but it shows what can be done.  
 
+- There is also a "demo" for those who don't wish to use it to show real contacts. It lacks some of the features of the original one (showing contacts images, showing alternative contacts, and maybe others), but you can customize it to your needs and also add the missing features.
+
+
 
   [1]: https://plus.google.com/+RichHyndman/posts/TSxaARVsRjF
   [2]: http://https://android.googlesource.com/platform/frameworks/ex/+/android-sdk-support_r11/chips/
