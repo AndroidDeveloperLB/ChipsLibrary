@@ -495,9 +495,11 @@ public class RecipientEditTextView extends MultiAutoCompleteTextView implements 
         final int end=getSelectionEnd();
         final int start=mTokenizer.findTokenStart(editable,end);
         final DrawableRecipientChip[] chips=getSpannable().getSpans(start,end,DrawableRecipientChip.class);
-        if(chips==null||chips.length==0)
+        if(chips==null||chips.length==0&&start>=0)
           {
           final Editable text=getText();
+          // TODO check why this code can crash (index out of bounds). Currently fixed by checking that
+          // start>=0
           int whatEnd=mTokenizer.findTokenEnd(text,start);
           // This token was already tokenized, so skip past the ending token.
           if(whatEnd<text.length()&&text.charAt(whatEnd)==',')
