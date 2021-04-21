@@ -1,3 +1,10 @@
+Note: this is deprecated. Google made better solution for it in its Material-design SDK:
+https://material.io/components/chips/android#using-chips
+https://medium.com/material-design-in-action/chips-material-components-for-android-46001664a40f
+https://developer.android.com/reference/com/google/android/material/chip/Chip
+
+----
+
 ChipsLibrary
 =================
 
